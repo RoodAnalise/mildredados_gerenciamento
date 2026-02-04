@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MILDREDADOS Gerenciamento</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@300;400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- IDENTIDADE VISUAL MILDREDADOS --- */
+        :root {
+            --background-dark: #12121C; --background-card: #1A1A2E; --accent-red: #FF1A50;
+            --accent-cyan: #00E676; --accent-purple: #7B00FF; --text-light: #E0E0E0;
+            --text-muted: #A0A0A0; --border-glow: #3A008A;
+            --gradient-main: linear-gradient(90deg, var(--accent-red) 0%, var(--accent-purple) 100%);
+            --gradient-secondary: linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-purple) 100%);
+            --accent-red-rgb: 255, 26, 80; --accent-cyan-rgb: 0, 230, 118; --accent-purple-rgb: 123, 0, 255;
+            --success-color: var(--accent-cyan); --failure-color: var(--accent-red); --pending-color: #7a7a9c;
+        }
+
+        /* Reset Básico e Estilos Globais */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Roboto', sans-serif; background-color: var(--background-dark); color: var(--text-light);
+            line-height: 1.6; display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; padding: 20px; position: relative; overflow-x: hidden;
+        }
+        /* Container Principal */
+        .container {
+            background-color: var(--background-card); border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 25px rgba(var(--accent-purple-rgb), 0.1);
+            padding: 30px; max-width: 1200px; width: 100%; margin-top: 20px;
+            position: relative; z-index: 1; border: 1px solid var(--border-glow);
+        }
+        /* Header */
+        header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid var(--border-glow); padding-bottom: 20px; }
+        .logo { font-family: 'Orbitron', sans-serif; font-size: 2.8em; font-weight: 700; letter-spacing: 2px; margin-bottom: 10px; cursor: default; }
+        .logo strong { background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 15px rgba(var(--accent-red-rgb), 0.5); }
+        .logo span { color: var(--accent-cyan); font-size: 0.7em; opacity: 0.8; margin-left: 5px; -webkit-text-fill-color: var(--accent-cyan); }
+        .tagline { font-size: 1.1em; color: var(--text-muted); font-family: 'Montserrat', sans-serif; }
+        /* Navegação por Abas */
+        .tab-nav { display: flex; justify-content: center; margin-bottom: 30px; gap: 15px; flex-wrap: wrap; }
+        .tab-btn {
+            background-color: transparent; color: var(--text-light); border: none; padding: 12px 25px;
+            font-size: 1.1em; font-weight: bold; font-family: 'Montserrat', sans-serif; cursor: pointer;
+            border-radius: 8px; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; position: relative;
+        }
+        .tab-btn::after {
+            content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 0; height: 3px; background: var(--gradient-secondary); border-radius: 2px; transition: width 0.3s ease;
+        }
+        .tab-btn:hover { color: var(--accent-cyan); text-shadow: 0 0 8px rgba(var(--accent-cyan-rgb), 0.7); }
+        .tab-btn.active { color: var(--accent-cyan); text-shadow: 0 0 10px rgba(var(--accent-cyan-rgb), 0.8); }
+        .tab-btn.active::after { width: 100%; }
+        /* Conteúdo das Abas */
+        .tab-content { display: none; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-content.active { display: block; }
+
+        .section-title {
+            font-family: 'Montserrat', sans-serif; font-size: 2.2em; text-align: center; margin-bottom: 35px;
+            position: relative; background: var(--gradient-main); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; text-shadow: 0 0 10px rgba(var(--accent-red-rgb), 0.4);
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+        }
+        .section-title::after {
+            content: ''; display: block; width: 80px; height: 4px; background: var(--gradient-secondary);
+            margin: 15px auto 0 auto; border-radius: 2px; box-shadow: 0 0 10px var(--accent-cyan); position: absolute; bottom: -25px;
+        }
+        #toggle-config-btn { cursor: pointer; color: var(--text-muted); transition: all 0.3s ease; }
+        #toggle-config-btn:hover { color: var(--accent-cyan); transform: scale(1.1); }
+        #toggle-config-btn.collapsed { transform: rotate(-180deg); }
+
+        /* Estrutura de Configuração */
+        #planning-config-container { transition: all 0.4s ease-in-out; max-height: 1000px; overflow: hidden; opacity: 1; }
+        #planning-config-container.hidden { max-height: 0; opacity: 0; margin-bottom: -30px; }
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .config-card { background-color: var(--background-dark); border: 1px solid var(--border-glow); border-radius: 12px; padding: 25px; }
+        .config-card h3 { font-family: 'Montserrat', sans-serif; color: var(--accent-cyan); font-size: 1.3em; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .action-buttons { text-align: center; }
+        
+        /* Grupos de Input */
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-size: 1.1em; color: var(--text-light); font-weight: 400; }
+        .input-group label strong { color: var(--accent-cyan); font-weight: 700; }
+        .input-group input, .input-group textarea {
+            width: 100%; padding: 12px 15px; border: 1px solid var(--border-glow); border-radius: 8px;
+            background-color: #0A0A10; color: var(--text-light); font-size: 1.1em; font-family: 'Roboto', sans-serif;
+            transition: all 0.3s ease;
+        }
+        .input-group input[type="number"] { -moz-appearance: textfield; }
+        .input-group input::-webkit-outer-spin-button, .input-group input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-group input:focus, .input-group textarea:focus {
+            border-color: var(--accent-cyan); box-shadow: 0 0 10px rgba(var(--accent-cyan-rgb), 0.6);
+            outline: none; background-color: var(--background-dark);
+        }
+        .input-group textarea { min-height: 80px; resize: vertical; }
+        
+        /* Botões de Ação */
+        .action-btn, .secondary-btn {
+            display: inline-block; width: auto; min-width: 200px; padding: 14px 25px; border: none; border-radius: 8px;
+            font-size: 1.2em; font-weight: bold; cursor: pointer; transition: all 0.3s ease;
+            text-transform: uppercase; font-family: 'Montserrat', sans-serif; letter-spacing: 1px; margin: 0 10px;
+        }
+        .action-btn { background: var(--gradient-secondary); color: var(--background-dark); box-shadow: 0 5px 15px rgba(var(--accent-cyan-rgb), 0.4); }
+        .action-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(var(--accent-cyan-rgb), 0.6); color: white; }
+        .secondary-btn { background-color: transparent; color: var(--accent-red); border: 2px solid var(--accent-red); }
+        .secondary-btn:hover { background-color: var(--accent-red); color: white; box-shadow: 0 5px 15px rgba(var(--accent-red-rgb), 0.4); transform: translateY(-3px); }
+        
+        /* Tabelas */
+        .table-container { max-height: 400px; overflow-y: auto; margin-top: 25px; border: 1px solid var(--border-glow); border-radius: 8px; position: relative; }
+        table { width: 100%; border-collapse: collapse; }
+        table thead { background-color: #1f1f38; color: var(--accent-cyan); position: sticky; top: 0; z-index: 2; }
+        table th, table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-glow); font-size: 0.95em; }
+        table th:last-child, table td:last-child { text-align: center; }
+        table th { font-family: 'Orbitron', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        table tbody tr:hover { background-color: #2a2a40; }
+        table td:nth-child(2), table td:nth-child(4) { color: var(--accent-cyan); font-weight: bold; }
+        table td:nth-child(5), table td:nth-child(6) { font-weight: bold; }
+        .status-batida { color: var(--success-color); font-weight: bold; text-shadow: 0 0 5px var(--success-color); }
+        .status-nao-batida { color: var(--failure-color); font-weight: bold; text-shadow: 0 0 5px var(--failure-color); }
+        .status-pendente { color: var(--pending-color); font-style: italic; }
+        .planning-btn {
+            background: var(--accent-purple); color: white; padding: 8px 12px; border-radius: 5px;
+            text-decoration: none; font-weight: 500; border: none; cursor: pointer;
+            transition: all 0.3s ease; box-shadow: 0 0 10px rgba(var(--accent-purple-rgb), 0.5); font-size: 0.9em;
+        }
+        .planning-btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px rgba(var(--accent-purple-rgb), 0.8); }
+        
+        /* Botão Flutuante */
+        .floating-btn {
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--gradient-main);
+            color: white; border: none; border-radius: 50%; display: flex; justify-content: center; align-items: center; 
+            cursor: pointer; box-shadow: 0 8px 25px rgba(var(--accent-red-rgb), 0.5); transition: all 0.3s ease; z-index: 1000;
+        }
+        .floating-btn:hover { transform: scale(1.1) rotate(5deg); box-shadow: 0 12px 30px rgba(var(--accent-red-rgb), 0.7); }
+        .floating-btn svg { width: 30px; height: 30px; }
+        
+        /* Modal Base */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 20px; }
+        .modal-content {
+            background-color: var(--background-card); padding: 25px; border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(var(--accent-purple-rgb), 0.3);
+            position: relative; max-width: 700px; width: 100%; border: 2px solid var(--accent-purple);
+            animation: fadeInScale 0.3s ease-out forwards;
+        }
+        @keyframes fadeInScale { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .close-button { color: var(--text-muted); position: absolute; top: 15px; right: 20px; font-size: 2.2em; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+        .close-button:hover, .close-button:focus { color: var(--accent-red); transform: rotate(90deg); }
+        
+        /* --- Modal de Planejamento Compacto --- */
+        #daily-planning-modal h2 { font-family: 'Orbitron', sans-serif; color: var(--accent-cyan); font-size: 1.8em; text-align: center; margin-bottom: 15px; text-shadow: 0 0 8px rgba(var(--accent-cyan-rgb), 0.5); }
+        #daily-planning-modal .modal-info { background-color: var(--background-dark); border: 1px solid var(--border-glow); border-radius: 8px; padding: 10px; margin-bottom: 20px; font-size: 1.1em; text-align: center; }
+        #daily-planning-modal .modal-info strong { color: var(--accent-cyan); font-size: 1.2em; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .modal-grid .input-group { margin-bottom: 15px; }
+        #daily-planning-modal textarea { min-height: 60px; margin-top: 5px; }
+        #daily-planning-modal .action-btn { width:100%; margin: 15px 0 0 0; }
+        
+        /* --- Calendário Redesenhado --- */
+        #calendar-tab .calendar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .calendar-day-card {
+            background-color: var(--background-card); border: 2px solid var(--border-glow); border-radius: 12px; padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); transition: all 0.3s ease; display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .calendar-day-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 25px rgba(var(--accent-cyan-rgb), 0.3); border-image: var(--gradient-secondary) 1; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-header h4 { font-family: 'Orbitron', sans-serif; color: var(--accent-cyan); font-size: 1.8em; text-shadow: 0 0 8px var(--accent-cyan); margin: 0; }
+        .edit-profit-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; transition: all 0.3s ease; padding: 5px; }
+        .edit-profit-btn:hover { color: var(--accent-cyan); transform: scale(1.2); }
+        .calendar-body p { margin-bottom: 8px; font-size: 1em; color: var(--text-muted); }
+        .calendar-body p strong { color: var(--text-light); font-weight: 400; font-size: 1.1em; }
+        .calendar-profit-input-container { display: flex; gap: 10px; margin-top: 10px; }
+        .calendar-profit-input-container.hidden { display: none; }
+        .calendar-input { flex-grow: 1; padding: 8px; background-color: #0A0A10; border: 1px solid var(--accent-cyan); color: var(--text-light); border-radius: 5px; font-size: 1em; }
+        .save-profit-btn { background: var(--accent-cyan); color: var(--background-dark); border: none; border-radius: 5px; padding: 0 15px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .save-profit-btn:hover { background: #00ff88; }
+        .calendar-footer { margin-top: auto; padding-top: 15px; border-top: 1px dashed var(--border-glow); text-align: right; }
+        .calendar-footer .status { font-weight: bold; font-size: 1.1em; }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            body { padding: 10px; } .container { padding: 20px; } .logo { font-size: 2em; }
+            .section-title { font-size: 1.8em; } .tab-btn { padding: 10px 15px; font-size: 1em; }
+            .action-btn, .secondary-btn { min-width: 150px; font-size: 1em; display: block; width: 100%; margin: 10px 0; }
+            .floating-btn { width: 50px; height: 50px; bottom: 20px; right: 20px; }
+            .floating-btn svg { width: 25px; height: 25px; }
+            .modal-content { max-width: 95%; } .config-grid, .modal-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="logo"><strong>MILDRE</strong><span>DADOS</span></h1>
+            <p class="tagline">Gerenciamento de Metas e Performance Operacional</p>
+        </header>
+
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="goals-compound">Metas e Lucros</button>
+            <button class="tab-btn" data-tab="surplus-management">Gordura Operacional</button>
+            <button class="tab-btn" data-tab="calendar-tab">Calendário</button>
+        </nav>
+
+        <main>
+            <!-- ABA: Metas e Lucros -->
+            <section id="goals-compound" class="tab-content active">
+                <h2 class="section-title">
+                    <span>Planejamento Composto</span>
+                    <svg id="toggle-config-btn" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </h2>
+                <div id="planning-config-container">
+                    <div class="config-grid">
+                        <div class="config-card">
+                            <h3>Parâmetros Iniciais</h3>
+                            <div class="input-group"><label for="start-bankroll">Banca Inicial (R$):</label><input type="number" id="start-bankroll" placeholder="1000.00"></div>
+                            <div class="input-group"><label for="num-days">Número de Dias:</label><input type="number" id="num-days" placeholder="30"></div>
+                        </div>
+                        <div class="config-card">
+                            <h3>Estratégia de Lucro</h3>
+                            <div class="input-group"><label for="daily-profit-percentage">% de Lucro Diário:</label><input type="number" id="daily-profit-percentage" placeholder="1.5"></div>
+                            <div class="input-group"><label for="change-day">Mudar % após o Dia:</label><input type="number" id="change-day" placeholder="Opcional"></div>
+                            <div class="input-group"><label for="new-profit-percentage">Novo % de Lucro:</label><input type="number" id="new-profit-percentage" placeholder="Opcional"></div>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="generate-compound-btn" class="action-btn">Gerar Tabela</button>
+                        <button id="clear-compound-table-btn" class="secondary-btn">Limpar Tabela</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="compound-table">
+                        <thead><tr><th>Dia</th><th>Banca Início</th><th>% Lucro</th><th>Meta (R$)</th><th>Banca Final</th><th>Ganho Real</th><th>Status</th><th>Ações</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ABA: Gordura Operacional -->
+            <section id="surplus-management" class="tab-content">
+                <h2 class="section-title"><span>Gordura Operacional</span></h2>
+                <div class="config-card" style="max-width: 600px; margin: auto;">
+                    <div style="text-align:center; margin-bottom: 20px;">
+                        <span style="font-family: 'Montserrat'; font-size: 1.2em; color: var(--text-muted);">Saldo de Gordura</span><br>
+                        <span id="current-surplus-balance" style="font-family: 'Orbitron'; font-size: 2.5em; color: var(--accent-cyan); text-shadow: 0 0 10px var(--accent-cyan);">R$ 0,00</span>
+                    </div>
+                    <div class="input-group"><label for="additional-operations-profit">Lucro Extra (R$):</label><input type="number" id="additional-operations-profit" placeholder="Adicionar valor à gordura"></div>
+                    <div class="action-buttons"><button id="add-surplus-profit-btn" class="action-btn">Adicionar</button><button id="clear-surplus-btn" class="secondary-btn">Limpar</button></div>
+                </div>
+            </section>
+
+            <!-- ABA: Calendário -->
+            <section id="calendar-tab" class="tab-content">
+                <h2 class="section-title"><span>Calendário de Operações</span></h2>
+                <div id="calendar-grid" class="calendar-grid"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Botão Flutuante -->
+    <button id="calculator-btn" class="floating-btn" title="Calculadora">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="12" y1="10" x2="12" y2="18"></line></svg>
+    </button>
+
+    <!-- Modal de Planejamento Diário -->
+    <div id="daily-planning-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Planejamento do Dia <span id="planning-day-display"></span></h2>
+            <div class="modal-info">Meta de Lucro: <strong id="planning-meta-value">R$ 0,00</strong></div>
+            
+            <div class="modal-grid">
+                <div class="input-group"><label for="planning-num-entries">Nº de Entradas:</label><input type="number" id="planning-num-entries" placeholder="Ex: 5"></div>
+                <div class="input-group"><label for="planning-stop-loss">Stop Loss (R$):</label><input type="number" id="planning-stop-loss" placeholder="Ex: 50.00"></div>
+                <div class="input-group"><label for="planning-value-per-entry">Valor/Entrada (R$):</label><input type="number" id="planning-value-per-entry" readonly></div>
+            </div>
+
+            <div class="input-group"><label for="planning-notes">Anotações Estratégicas:</label><textarea id="planning-notes" placeholder="Estratégias, mercados, horários..."></textarea></div>
+            
+            <button id="save-daily-plan-btn" class="action-btn">Salvar Plano</button>
+        </div>
+    </div>
+    
+    <script>
+        const formatCurrency = (value) => parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        let compoundGoalsData = []; let dailyPlans = {}; let surplusBalance = 0;
+        const compoundTableBody = document.querySelector('#compound-table tbody');
+        const currentSurplusBalanceSpan = document.getElementById('current-surplus-balance');
+        const calendarGrid = document.getElementById('calendar-grid');
+
+        const saveState = () => { 
+            localStorage.setItem('mildredadosCompoundGoalsData', JSON.stringify(compoundGoalsData)); 
+            localStorage.setItem('mildredadosDailyPlans', JSON.stringify(dailyPlans)); 
+            localStorage.setItem('mildredadosSurplusBalance', JSON.stringify(surplusBalance)); 
+        };
+        const loadState = () => { 
+            compoundGoalsData = JSON.parse(localStorage.getItem('mildredadosCompoundGoalsData')) || []; 
+            dailyPlans = JSON.parse(localStorage.getItem('mildredadosDailyPlans')) || {}; 
+            surplusBalance = JSON.parse(localStorage.getItem('mildredadosSurplusBalance')) || 0; 
+        };
+
+        const getPlanStatus = (planId, metaValue) => {
+            const plan = dailyPlans[planId];
+            if (!plan || plan.actualProfit === null || isNaN(plan.actualProfit)) return '<span class="status-pendente">Pendente</span>';
+            return plan.actualProfit >= metaValue ? '<span class="status-batida">Batida!</span>' : '<span class="status-nao-batida">Não Batida</span>';
+        };
+        const getRealProfitDisplay = (plan) => (plan && plan.actualProfit !== null && !isNaN(plan.actualProfit)) ? formatCurrency(plan.actualProfit) : '<span class="status-pendente">-</span>';
+
+        const renderAll = () => { renderCompoundTable(); renderCalendar(); updateSurplusDisplay(); };
+        const renderCompoundTable = () => {
+            compoundTableBody.innerHTML = '';
+            if (compoundGoalsData.length === 0) { compoundTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; opacity: 0.7;">Gere um planejamento para visualizar a tabela.</td></tr>'; return; }
+            compoundGoalsData.forEach((data) => {
+                const row = compoundTableBody.insertRow();
+                row.innerHTML = `<td>${data.day}</td><td>${formatCurrency(data.bankrollStart)}</td><td>${data.profitPct.toFixed(2)}%</td><td>${formatCurrency(data.dailyProfit)}</td><td>${formatCurrency(data.bankrollFinal)}</td><td>${getRealProfitDisplay(dailyPlans[data.planId])}</td><td>${getPlanStatus(data.planId, data.dailyProfit)}</td><td><button class="planning-btn" data-plan-id="${data.planId}" data-meta-value="${data.dailyProfit}">Plano</button></td>`;
+            });
+        };
+        const renderCalendar = () => {
+            calendarGrid.innerHTML = '';
+            if (compoundGoalsData.length === 0) { calendarGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; opacity: 0.7;">Gere um planejamento para ver seu calendário.</p>'; return; }
+            compoundGoalsData.forEach(data => {
+                const plan = dailyPlans[data.planId];
+                const card = document.createElement('div');
+                card.className = 'calendar-day-card';
+                const currentProfit = (plan && plan.actualProfit !== null && !isNaN(plan.actualProfit)) ? plan.actualProfit : '';
+                card.innerHTML = `<div class="calendar-header"><h4>Dia ${data.day}</h4><button class="edit-profit-btn" data-plan-id="${data.planId}" title="Adicionar/Editar Lucro"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button></div><div class="calendar-body"><p>Meta: <strong>${formatCurrency(data.dailyProfit)}</strong></p><p>Ganho Real: <strong>${getRealProfitDisplay(plan)}</strong></p><div class="calendar-profit-input-container hidden" data-plan-id="${data.planId}"><input type="number" class="calendar-input" placeholder="Lucro do dia" value="${currentProfit}"><button class="save-profit-btn">Salvar</button></div></div><div class="calendar-footer"><span class="status">${getPlanStatus(data.planId, data.dailyProfit)}</span></div>`;
+                calendarGrid.appendChild(card);
+            });
+        };
+        const updateSurplusDisplay = () => { currentSurplusBalanceSpan.textContent = formatCurrency(surplusBalance); };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState(); renderAll();
+            document.querySelectorAll('.tab-btn').forEach(button => button.addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active')); button.classList.add('active'); document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === button.dataset.tab)); if (button.dataset.tab === 'calendar-tab') renderCalendar(); }));
+            document.getElementById('toggle-config-btn').addEventListener('click', (e) => { document.getElementById('planning-config-container').classList.toggle('hidden'); e.currentTarget.classList.toggle('collapsed'); });
+            document.getElementById('generate-compound-btn').addEventListener('click', () => {
+                const startBankroll = parseFloat(document.getElementById('start-bankroll').value), dailyProfitPercentage = parseFloat(document.getElementById('daily-profit-percentage').value), numDays = parseInt(document.getElementById('num-days').value), changeDay = parseInt(document.getElementById('change-day').value), newProfitPercentage = parseFloat(document.getElementById('new-profit-percentage').value);
+                if (isNaN(startBankroll) || isNaN(dailyProfitPercentage) || isNaN(numDays)) { alert('Preencha os campos obrigatórios.'); return; }
+                compoundGoalsData.forEach(data => delete dailyPlans[data.planId]);
+                compoundGoalsData = []; let currentBankroll = startBankroll;
+                for (let day = 1; day <= numDays; day++) { const currentProfitPercentage = (day >= changeDay && !isNaN(changeDay)) ? newProfitPercentage : dailyProfitPercentage; const dailyProfit = currentBankroll * (currentProfitPercentage / 100); const finalBankroll = currentBankroll + dailyProfit; compoundGoalsData.push({ day, bankrollStart: currentBankroll, profitPct: currentProfitPercentage, dailyProfit, bankrollFinal: finalBankroll, planId: `compound_${day}` }); currentBankroll = finalBankroll; }
+                renderAll(); saveState();
+            });
+            document.getElementById('clear-compound-table-btn').addEventListener('click', () => { if (confirm('Tem certeza? Isso apagará a tabela e todos os planejamentos.')) { compoundGoalsData = []; dailyPlans = {}; renderAll(); saveState(); } });
+            document.getElementById('add-surplus-profit-btn').addEventListener('click', () => { const profitInput = document.getElementById('additional-operations-profit'); const profit = parseFloat(profitInput.value); if (!isNaN(profit) && profit > 0) { surplusBalance += profit; profitInput.value = ''; updateSurplusDisplay(); saveState(); } });
+            document.getElementById('clear-surplus-btn').addEventListener('click', () => { if (confirm('Tem certeza?')) { surplusBalance = 0; updateSurplusDisplay(); saveState(); } });
+
+            const dailyPlanningModal = document.getElementById('daily-planning-modal');
+            const planningDayDisplay = document.getElementById('planning-day-display');
+            const planningMetaValue = document.getElementById('planning-meta-value');
+            const planningNumEntries = document.getElementById('planning-num-entries');
+            const planningValuePerEntry = document.getElementById('planning-value-per-entry');
+            const planningStopLoss = document.getElementById('planning-stop-loss');
+            const planningNotes = document.getElementById('planning-notes');
+            let currentPlanningDayId = null;
+
+            document.querySelector('main').addEventListener('click', e => {
+                const planBtn = e.target.closest('.planning-btn');
+                if (planBtn) {
+                    currentPlanningDayId = planBtn.dataset.planId;
+                    const metaValue = parseFloat(planBtn.dataset.metaValue);
+                    planningDayDisplay.textContent = currentPlanningDayId.split('_')[1];
+                    planningMetaValue.textContent = formatCurrency(metaValue);
+                    const plan = dailyPlans[currentPlanningDayId] || {};
+                    planningNumEntries.value = plan.plannedEntries || ''; planningStopLoss.value = plan.stopLoss || ''; planningNotes.value = plan.notes || '';
+                    planningValuePerEntry.value = (plan.plannedEntries > 0) ? (metaValue / plan.plannedEntries).toFixed(2) : '';
+                    dailyPlanningModal.style.display = 'flex';
+                }
+            });
+            planningNumEntries.addEventListener('input', () => { const numEntries = parseInt(planningNumEntries.value); const meta = parseFloat(planningMetaValue.textContent.replace(/[R$\.\s]/g, '').replace(',', '.')); planningValuePerEntry.value = (numEntries > 0) ? (meta / numEntries).toFixed(2) : ''; });
+            document.getElementById('save-daily-plan-btn').addEventListener('click', () => { const plan = dailyPlans[currentPlanningDayId] || {}; dailyPlans[currentPlanningDayId] = { ...plan, plannedEntries: parseInt(planningNumEntries.value) || 0, stopLoss: parseFloat(planningStopLoss.value) || 0, notes: planningNotes.value }; saveState(); dailyPlanningModal.style.display = 'none'; });
+            
+            calendarGrid.addEventListener('click', e => {
+                const target = e.target; const editBtn = target.closest('.edit-profit-btn'); const saveBtn = target.closest('.save-profit-btn');
+                if (editBtn) { const planId = editBtn.dataset.planId; const inputContainer = calendarGrid.querySelector(`.calendar-profit-input-container[data-plan-id="${planId}"]`); inputContainer.classList.toggle('hidden'); inputContainer.querySelector('input').focus(); }
+                if (saveBtn) {
+                    const inputContainer = saveBtn.parentElement; const planId = inputContainer.dataset.planId; const metaValue = parseFloat(compoundGoalsData.find(d => d.planId === planId).dailyProfit); const input = inputContainer.querySelector('.calendar-input'); const newProfit = parseFloat(input.value);
+                    if (!isNaN(newProfit) && newProfit >= 0) {
+                        const oldProfit = (dailyPlans[planId] && dailyPlans[planId].actualProfit) || 0;
+                        if (!dailyPlans[planId]) dailyPlans[planId] = {};
+                        dailyPlans[planId].actualProfit = newProfit;
+                        const oldSurplus = oldProfit > metaValue ? oldProfit - metaValue : 0; const newSurplus = newProfit > metaValue ? newProfit - metaValue : 0;
+                        surplusBalance = surplusBalance - oldSurplus + newSurplus;
+                        saveState(); renderAll();
+                    } else { inputContainer.classList.add('hidden'); }
+                }
+            });
+
+            document.querySelectorAll('.close-button').forEach(b => b.addEventListener('click', () => b.closest('.modal').style.display = 'none'));
+            window.addEventListener('click', e => { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; });
+            document.getElementById('calculator-btn').addEventListener('click', () => alert("MILDREDADOS: Calculadora em desenvolvimento."));
+        });
+    </script>
+</body>
+</html>
